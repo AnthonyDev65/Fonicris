@@ -33,6 +33,14 @@ export const useAuthStore = create<AuthState>()(
 
                     if (user) {
                         set({ user, isAuthenticated: true, isLoading: false });
+                        
+                        // Log the login activity (don't await - fire and forget)
+                        googleSheetsService.addActivityLog(
+                            user.Nombre || user.Email,
+                            'LOGIN',
+                            `Inicio de sesión exitoso - Rol: ${user.Rol}`
+                        ).catch(err => console.error('Error logging login:', err));
+                        
                         return true;
                     } else {
                         set({ error: 'Credenciales inválidas o usuario inactivo', isLoading: false });

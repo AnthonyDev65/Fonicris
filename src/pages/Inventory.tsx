@@ -1,8 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useInventoryStore } from '../store/useInventoryStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { googleSheetsService } from '../services/GoogleSheetsService';
 import type { Activo } from '../types';
 import * as XLSX from 'xlsx';
+import AssetModal from '../components/AssetModal';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import ImageLightbox from '../components/ImageLightbox';
 
 export default function Inventory() {
     const {
@@ -20,6 +24,11 @@ export default function Inventory() {
         setItemsPerPage,
     } = useInventoryStore();
 
+    const { user } = useAuthStore();
+    
+    // Check permissions
+    const canDelete = user?.Rol === 'Prime' || user?.Rol === 'Admin';
+
     const [filterOptions, setFilterOptions] = useState<{
         grupos: string[];
         zonas: string[];
@@ -27,6 +36,13 @@ export default function Inventory() {
     }>({ grupos: [], zonas: [], estados: [] });
 
     const [selectedAsset, setSelectedAsset] = useState<Activo | null>(null);
+    
+    // Modal states
+    const [showAssetModal, setShowAssetModal] = useState(false);
+    const [editingAsset, setEditingAsset] = useState<Activo | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showImageLightbox, setShowImageLightbox] = useState(false);
 
     useEffect(() => {
         refreshData();
@@ -42,7 +58,7 @@ export default function Inventory() {
         }
     };
 
-    // Pagination - Filter out empty items
+    // Pagination
     const paginatedActivos = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
         return filteredActivos
@@ -54,7 +70,62 @@ export default function Inventory() {
     const startItem = filteredActivos.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
     const endItem = Math.min(currentPage * itemsPerPage, filteredActivos.length);
 
-    // Export to Excel
+    // Handlers
+    const handleAddAsset = () => {
+        setEditingAsset(null);
+        setShowAssetModal(true);
+    };
+
+    const handleEditAsset = () => {
+        if (selectedAsset) {
+            setEditingAsset(selectedAsset);
+            setShowAssetModal(true);
+        }
+    };
+
+    const handleViewAsset = () => {
+        if (selectedAsset?.ImagenUrl) {
+            setShowImageLightbox(true);
+        }
+    };
+
+    const handleDeleteAsset = () => {
+        if (selectedAsset) {
+            setShowDeleteModal(true);
+        }
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedAsset) return;
+        
+        setIsDeleting(true);
+        try {
+            await googleSheetsService.deleteActivo(selectedAsset);
+            // Log delete activity
+            const userName = user?.Nombre || user?.Email || 'Usuario';
+            await googleSheetsService.addActivityLog(
+                userName,
+                'ELIMINAR',
+                `Activo eliminado: ${selectedAsset.CodigoId} - ${selectedAsset.Nombre}`
+            );
+            setShowDeleteModal(false);
+            setSelectedAsset(null);
+            await refreshData();
+        } catch (err) {
+            console.error('Error deleting asset:', err);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleSaveAsset = async () => {
+        setShowAssetModal(false);
+        setEditingAsset(null);
+        setSelectedAsset(null);
+        await refreshData();
+        await loadFilterOptions();
+    };
+
     const handleExportExcel = () => {
         const data = filteredActivos.map((a) => ({
             'Número': a.Numero,
@@ -77,7 +148,31 @@ export default function Inventory() {
         XLSX.writeFile(wb, `inventario_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
-    // Sort header component
+    const handleExportSelected = () => {
+        if (!selectedAsset) return;
+        
+        const data = [{
+            'Número': selectedAsset.Numero,
+            'Código': selectedAsset.CodigoId,
+            'Nombre': selectedAsset.Nombre,
+            'Marca': selectedAsset.Marca,
+            'Cantidad': selectedAsset.Cantidad,
+            'Estado': selectedAsset.Estado,
+            'Responsable': selectedAsset.Responsable,
+            'Fecha Ingreso': selectedAsset.FechaIngreso,
+            'Grupo': selectedAsset.Grupo,
+            'Zona': selectedAsset.Zona,
+            'Observaciones': selectedAsset.Observaciones,
+            'Valoración': selectedAsset.Valoracion,
+        }];
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Activo');
+        XLSX.writeFile(wb, `activo_${selectedAsset.CodigoId}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
+
+    // Components
     const SortHeader = ({ field, label }: { field: keyof Activo; label: string }) => (
         <th
             onClick={() => setSorting(field)}
@@ -102,7 +197,6 @@ export default function Inventory() {
         </th>
     );
 
-    // Status badge component - Updated colors to match reference
     const StatusBadge = ({ estado }: { estado: string }) => {
         const colors = {
             Nuevo: 'bg-emerald-500 text-white',
@@ -116,41 +210,29 @@ export default function Inventory() {
         );
     };
 
-    // Group badge component - Yellow/Gold like reference
-    const GroupBadge = ({ grupo }: { grupo: string }) => {
-        return (
-            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-yellow-900">
-                {grupo}
-            </span>
-        );
-    };
+    const GroupBadge = ({ grupo }: { grupo: string }) => (
+        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-yellow-900">
+            {grupo}
+        </span>
+    );
 
-    // Quantity badge - Blue
-    const QuantityBadge = ({ cantidad }: { cantidad: number }) => {
-        return (
-            <span className="px-2 py-0.5 rounded text-sm font-semibold bg-blue-500 text-white min-w-[24px] text-center inline-block">
-                {cantidad}
-            </span>
-        );
-    };
+    const QuantityBadge = ({ cantidad }: { cantidad: number }) => (
+        <span className="px-2 py-0.5 rounded text-sm font-semibold bg-blue-500 text-white min-w-[24px] text-center inline-block">
+            {cantidad}
+        </span>
+    );
 
-    // Value badge - Green
-    const ValueBadge = ({ valor }: { valor: number }) => {
-        return (
-            <span className="px-2 py-0.5 rounded text-sm font-semibold bg-green-500 text-white">
-                ${valor}
-            </span>
-        );
-    };
+    const ValueBadge = ({ valor }: { valor: number }) => (
+        <span className="px-2 py-0.5 rounded text-sm font-semibold bg-green-500 text-white">
+            ${valor}
+        </span>
+    );
 
-    // Lugar badge - Green
-    const LugarBadge = ({ lugar }: { lugar: string }) => {
-        return (
-            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-500 text-white">
-                {lugar}
-            </span>
-        );
-    };
+    const LugarBadge = ({ lugar }: { lugar: string }) => (
+        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-500 text-white">
+            {lugar}
+        </span>
+    );
 
     if (isLoading && filteredActivos.length === 0) {
         return (
@@ -165,12 +247,12 @@ export default function Inventory() {
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            {/* Mobile Filters - Only visible on mobile */}
+            {/* Mobile Filters */}
             <div className="lg:hidden flex gap-2 mb-4 flex-shrink-0">
                 <select
-                    value={filters.grupo || ''}
-                    onChange={(e) => setFilters({ grupo: e.target.value || undefined })}
-                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.grupo?.[0] || ''}
+                    onChange={(e) => setFilters({ grupo: e.target.value ? [e.target.value] : [] })}
+                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm"
                 >
                     <option value="">Seleccionar Grupo</option>
                     {filterOptions.grupos.map((g) => (
@@ -178,9 +260,9 @@ export default function Inventory() {
                     ))}
                 </select>
                 <select
-                    value={filters.zona || ''}
-                    onChange={(e) => setFilters({ zona: e.target.value || undefined })}
-                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.zona?.[0] || ''}
+                    onChange={(e) => setFilters({ zona: e.target.value ? [e.target.value] : [] })}
+                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm"
                 >
                     <option value="">Seleccionar Zona</option>
                     {filterOptions.zonas.map((z) => (
@@ -189,7 +271,7 @@ export default function Inventory() {
                 </select>
             </div>
 
-            {/* Desktop Search Bar - Hidden on mobile */}
+            {/* Desktop Search Bar */}
             <div className="hidden lg:block bg-transparent mb-4 flex-shrink-0">
                 <div className="relative max-w-xl">
                     <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
@@ -200,19 +282,20 @@ export default function Inventory() {
                         placeholder="Buscar Activos"
                         value={filters.search}
                         onChange={(e) => setFilters({ search: e.target.value })}
-                        className="w-full pl-12 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full pl-12 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
             </div>
 
-            {/* Desktop Toolbar - Hidden on mobile */}
+            {/* Desktop Toolbar */}
             <div className="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-3 mb-4 flex-shrink-0">
                 <div className="flex flex-wrap items-center gap-2">
                     {/* View Button */}
                     <button
-                        disabled={!selectedAsset}
+                        onClick={handleViewAsset}
+                        disabled={!selectedAsset?.ImagenUrl}
                         className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        title="Ver activo"
+                        title="Ver imagen"
                     >
                         <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
@@ -221,6 +304,7 @@ export default function Inventory() {
 
                     {/* Edit Button */}
                     <button
+                        onClick={handleEditAsset}
                         disabled={!selectedAsset}
                         className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         title="Editar activo"
@@ -230,22 +314,25 @@ export default function Inventory() {
                         </svg>
                     </button>
 
-                    {/* Delete Button */}
-                    <button
-                        disabled={!selectedAsset}
-                        className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        title="Eliminar activo"
-                    >
-                        <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v10zM18 4h-2.5l-.71-.71c-.18-.18-.44-.29-.7-.29H9.91c-.26 0-.52.11-.7.29L8.5 4H6c-.55 0-1 .45-1 1s.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1z" />
-                        </svg>
-                    </button>
+                    {/* Delete Button - Solo Prime y Admin */}
+                    {canDelete && (
+                        <button
+                            onClick={handleDeleteAsset}
+                            disabled={!selectedAsset}
+                            className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            title="Eliminar activo"
+                        >
+                            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v10zM18 4h-2.5l-.71-.71c-.18-.18-.44-.29-.7-.29H9.91c-.26 0-.52.11-.7.29L8.5 4H6c-.55 0-1 .45-1 1s.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1z" />
+                            </svg>
+                        </button>
+                    )}
 
                     <div className="w-1 h-8 bg-gray-300 dark:bg-gray-600 rounded mx-1"></div>
 
-                    {/* Export Button */}
+                    {/* Export Selected Button */}
                     <button
-                        onClick={handleExportExcel}
+                        onClick={handleExportSelected}
                         disabled={!selectedAsset}
                         className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         title="Exportar selección"
@@ -259,11 +346,23 @@ export default function Inventory() {
 
                     {/* Add Button */}
                     <button
-                        className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
+                        onClick={handleAddAsset}
+                        className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
                         title="Agregar nuevo activo"
                     >
                         <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                        </svg>
+                    </button>
+
+                    {/* Export All Button */}
+                    <button
+                        onClick={handleExportExcel}
+                        className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
+                        title="Exportar todo"
+                    >
+                        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
                         </svg>
                     </button>
 
@@ -280,8 +379,19 @@ export default function Inventory() {
                 </div>
             </div>
 
-            {/* Mobile Cards View - Only visible on mobile */}
+            {/* Mobile Cards View */}
             <div className="lg:hidden flex-1 overflow-y-auto space-y-3">
+                {/* Mobile Add Button */}
+                <button
+                    onClick={handleAddAsset}
+                    className="w-full p-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg>
+                    Añadir Activo
+                </button>
+
                 {paginatedActivos.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
                         No se encontraron activos
@@ -291,53 +401,62 @@ export default function Inventory() {
                         <div
                             key={activo.Numero}
                             onClick={() => setSelectedAsset(activo)}
-                            className={`bg-white dark:bg-gray-800 rounded-xl border p-4 transition-all ${selectedAsset?.Numero === activo.Numero
-                                ? 'border-blue-500 shadow-md'
-                                : 'border-gray-200 dark:border-gray-700'
-                                }`}
+                            className={`bg-white dark:bg-gray-800 rounded-xl border p-4 transition-all ${
+                                selectedAsset?.Numero === activo.Numero
+                                    ? 'border-blue-500 shadow-md'
+                                    : 'border-gray-200 dark:border-gray-700'
+                            }`}
                         >
-                            {/* Header Row */}
                             <div className="flex justify-between items-start mb-2">
                                 <div>
                                     <p className="text-gray-900 dark:text-white font-bold text-base">
-                                        Activo: {activo.Nombre}
+                                        {activo.Nombre}
                                     </p>
                                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                                         Marca: {activo.Marca || 'N/A'}
                                     </p>
                                 </div>
-                                <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">
+                                <span className="text-gray-400 dark:text-gray-500 text-sm font-medium font-mono">
                                     {activo.CodigoId}
                                 </span>
                             </div>
 
-                            {/* Info Row */}
                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className="text-gray-600 dark:text-gray-400 text-sm">Estado:</span>
                                 <StatusBadge estado={activo.Estado} />
-                                <span className="text-gray-600 dark:text-gray-400 text-sm ml-2">Cantidad:</span>
                                 <QuantityBadge cantidad={activo.Cantidad} />
-                                <span className="text-gray-600 dark:text-gray-400 text-sm ml-2">Valor:</span>
                                 <ValueBadge valor={activo.Valoracion} />
                             </div>
 
-                            {/* Zona Row */}
-                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className="text-gray-600 dark:text-gray-400 text-sm">Zona:</span>
-                                <GroupBadge grupo={activo.Grupo} />
-                            </div>
-
-                            {/* Lugar Row */}
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-gray-600 dark:text-gray-400 text-sm">Lugar:</span>
+                                <GroupBadge grupo={activo.Grupo} />
                                 <LugarBadge lugar={activo.Zona} />
                             </div>
+
+                            {/* Mobile Action Buttons */}
+                            {selectedAsset?.Numero === activo.Numero && (
+                                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleEditAsset(); }}
+                                        className="flex-1 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium"
+                                    >
+                                        Editar
+                                    </button>
+                                    {canDelete && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteAsset(); }}
+                                            className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-medium"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
             </div>
 
-            {/* Desktop Data Table - Hidden on mobile */}
+            {/* Desktop Data Table */}
             <div className="hidden lg:flex flex-col flex-1 min-h-0">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex-1 flex flex-col min-h-0 overflow-hidden">
                     <div className="overflow-auto flex-1">
@@ -367,13 +486,15 @@ export default function Inventory() {
                                         <tr
                                             key={activo.Numero}
                                             onClick={() => setSelectedAsset(activo)}
-                                            className={`cursor-pointer transition-colors ${selectedAsset?.Numero === activo.Numero
-                                                ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
-                                                : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                                                }`}
+                                            onDoubleClick={() => { setEditingAsset(activo); setShowAssetModal(true); }}
+                                            className={`cursor-pointer transition-colors ${
+                                                selectedAsset?.Numero === activo.Numero
+                                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
+                                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                            }`}
                                         >
                                             <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className="font-bold text-gray-900 dark:text-white">{activo.CodigoId}</span>
+                                                <span className="font-bold text-gray-900 dark:text-white font-mono">{activo.CodigoId}</span>
                                             </td>
                                             <td className="px-4 py-3 max-w-[200px] truncate" title={activo.Nombre}>
                                                 <span className="font-semibold text-gray-900 dark:text-white">{activo.Nombre}</span>
@@ -381,10 +502,10 @@ export default function Inventory() {
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <QuantityBadge cantidad={activo.Cantidad} />
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-semibold max-w-[120px] truncate" title={activo.Marca}>
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-semibold max-w-[120px] truncate">
                                                 {activo.Marca}
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-semibold max-w-[150px] truncate" title={activo.Responsable}>
+                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300 font-semibold max-w-[150px] truncate">
                                                 {activo.Responsable}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
@@ -410,7 +531,6 @@ export default function Inventory() {
                 {/* Desktop Pagination */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-3 mt-4 flex-shrink-0">
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                        {/* Item count */}
                         <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                             <span>Mostrando</span>
                             <span className="font-semibold text-gray-900 dark:text-white">{startItem}</span>
@@ -421,9 +541,7 @@ export default function Inventory() {
                             <span>elementos</span>
                         </div>
 
-                        {/* Pagination controls */}
                         <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg">
-                            {/* Items per page */}
                             <div className="px-3 py-2 border-r border-gray-300 dark:border-gray-600">
                                 <select
                                     value={itemsPerPage}
@@ -437,7 +555,6 @@ export default function Inventory() {
                                 </select>
                             </div>
 
-                            {/* Previous button */}
                             <button
                                 onClick={() => setPage(currentPage - 1)}
                                 disabled={currentPage === 1}
@@ -448,7 +565,6 @@ export default function Inventory() {
                                 </svg>
                             </button>
 
-                            {/* Next button */}
                             <button
                                 onClick={() => setPage(currentPage + 1)}
                                 disabled={currentPage === totalPages}
@@ -463,7 +579,7 @@ export default function Inventory() {
                 </div>
             </div>
 
-            {/* Mobile Pagination - Simpler for mobile */}
+            {/* Mobile Pagination */}
             <div className="lg:hidden flex items-center justify-between pt-4 flex-shrink-0">
                 <button
                     onClick={() => setPage(currentPage - 1)}
@@ -473,7 +589,7 @@ export default function Inventory() {
                     Anterior
                 </button>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {currentPage} / {totalPages}
+                    {currentPage} / {totalPages || 1}
                 </span>
                 <button
                     onClick={() => setPage(currentPage + 1)}
@@ -483,6 +599,31 @@ export default function Inventory() {
                     Siguiente
                 </button>
             </div>
+
+            {/* Modals */}
+            {showAssetModal && (
+                <AssetModal
+                    asset={editingAsset}
+                    onClose={() => { setShowAssetModal(false); setEditingAsset(null); }}
+                    onSave={handleSaveAsset}
+                />
+            )}
+
+            {showDeleteModal && selectedAsset && (
+                <DeleteConfirmModal
+                    asset={selectedAsset}
+                    onConfirm={confirmDelete}
+                    onCancel={() => setShowDeleteModal(false)}
+                    isLoading={isDeleting}
+                />
+            )}
+
+            {showImageLightbox && selectedAsset?.ImagenUrl && (
+                <ImageLightbox
+                    imageUrl={selectedAsset.ImagenUrl}
+                    onClose={() => setShowImageLightbox(false)}
+                />
+            )}
         </div>
     );
 }

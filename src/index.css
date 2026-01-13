@@ -1,3 +1,6 @@
+/* Import Montserrat font */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +8,7 @@
 /* Custom CSS Variables for theming */
 :root {
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-montserrat: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Base styles */
@@ -64,6 +68,16 @@ html.dark body,
   background: #64748b;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Form inputs */
 input,
 select,
@@ -100,6 +114,16 @@ button:disabled {
   /* Glass card effect - dark mode */
   .glass-card-dark {
     @apply bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-xl shadow-sm;
+  }
+
+  /* Glass card - unified */
+  .glass-card {
+    @apply bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg;
+  }
+
+  /* Label text */
+  .label-text {
+    @apply block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2;
   }
 
   /* Primary button */
@@ -197,6 +221,10 @@ button:disabled {
 /* Modal overlay */
 .modal-overlay {
   @apply fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4;
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto;
 }
 
 /* Focus ring utility */

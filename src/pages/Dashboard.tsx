@@ -110,7 +110,7 @@ export default function Dashboard() {
             shadowColor: 'shadow-amber-500/25',
         },
         {
-            title: 'Requieren Atención',
+            title: 'Dañados',
             value: stats.activosDanados,
             icon: AlertTriangle,
             gradient: 'from-red-500 to-red-600',
@@ -126,7 +126,7 @@ export default function Dashboard() {
     ];
 
     return (
-        <div className="h-full overflow-y-auto space-y-6 pb-6">
+        <div className="h-full overflow-y-auto space-y-6 pb-6 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>

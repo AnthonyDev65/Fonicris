@@ -21,7 +21,7 @@ export interface Usuario {
     Nombre: string;
     Email: string;
     Password: string;
-    Rol: 'Admin' | 'Usuario' | 'Visualizador';
+    Rol: 'Prime' | 'Admin' | 'Usuario' | 'Visualizador';
     Activo: boolean;
 }
 

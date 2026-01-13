@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { Package, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -19,94 +19,127 @@ export default function Login() {
         }
     };
 
-    return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Animated background elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/20 rounded-full blur-3xl animate-pulse-slow" />
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent-500/20 rounded-full blur-3xl animate-pulse-slow" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl" />
-            </div>
+    const isFormValid = email.trim() !== '' && password.trim() !== '';
 
-            {/* Login Card */}
-            <div className="glass-card p-8 w-full max-w-md relative z-10 animate-in">
-                {/* Logo & Title */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 shadow-lg shadow-primary-500/30 mb-4">
-                        <Package className="w-10 h-10 text-white" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-white mb-2 glow-text">FONICRIS</h1>
-                    <p className="text-white/60">Sistema de Gestión de Inventario</p>
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-slate-200">
+            {/* Login Card - Inspired by WPF design */}
+            <div className="w-full max-w-[400px] bg-[#F4F4F4] rounded-xl shadow-lg border border-gray-300/50 overflow-hidden">
+                {/* Header */}
+                <div className="relative h-[70px] flex items-center px-8 border-b-[3px] border-white">
+                    <h1 className="text-2xl font-semibold text-[#2C3E50] font-['Montserrat',sans-serif]">
+                        Log in
+                    </h1>
+                    
+                    {/* Close button - decorative for web */}
+                    <button 
+                        className="absolute right-5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md flex items-center justify-center transition-colors hover:bg-red-500 group"
+                        onClick={() => window.close()}
+                    >
+                        <X className="w-4 h-4 text-[#2C3E50] group-hover:text-white transition-colors" />
+                    </button>
                 </div>
 
-                {/* Error Alert */}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center gap-3 animate-fade-in">
-                        <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                        <p className="text-red-400 text-sm">{error}</p>
-                    </div>
-                )}
-
-                {/* Login Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label htmlFor="email" className="label-text">
-                            Correo Electrónico
-                        </label>
+                {/* Form Section */}
+                <div className="p-8 pt-6 border-t-[3px] border-white">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Email Field */}
                         <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="usuario@ejemplo.com"
-                                className="input-glass pl-12"
-                                required
-                                autoComplete="email"
-                            />
+                            <div className={`
+                                h-[50px] rounded-lg bg-[#F8F8FC] border transition-all
+                                ${email ? 'border-[#8A2BE2] bg-white' : 'border-[#E0E0E0] hover:border-[#C0C0C0]'}
+                            `}>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full h-full px-4 bg-transparent text-black text-base font-['Montserrat',sans-serif] outline-none"
+                                    placeholder=""
+                                    required
+                                    autoComplete="email"
+                                />
+                                {!email && (
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base font-['Montserrat',sans-serif] pointer-events-none">
+                                        E-mail
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label htmlFor="password" className="label-text">
-                            Contraseña
-                        </label>
+                        {/* Password Field */}
                         <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                            <input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="input-glass pl-12"
-                                required
-                                autoComplete="current-password"
-                            />
+                            <div className={`
+                                h-[50px] rounded-lg bg-[#F8F8FC] border transition-all
+                                ${password ? 'border-black bg-white' : 'border-[#E0E0E0] hover:border-[#C0C0C0]'}
+                            `}>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full h-full px-4 bg-transparent text-black text-base font-['Montserrat',sans-serif] outline-none"
+                                    placeholder=""
+                                    required
+                                    autoComplete="current-password"
+                                />
+                                {!password && (
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base font-['Montserrat',sans-serif] pointer-events-none">
+                                        Password
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="btn-primary w-full flex items-center justify-center gap-2"
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Iniciando sesión...
-                            </>
-                        ) : (
-                            'Iniciar Sesión'
+                        {/* Login Button */}
+                        <button
+                            type="submit"
+                            disabled={!isFormValid || isLoading}
+                            className={`
+                                w-[200px] h-[50px] mx-auto block rounded-[10px] text-white text-base font-bold font-['Montserrat',sans-serif]
+                                transition-all shadow-md
+                                ${isFormValid && !isLoading 
+                                    ? 'bg-[#1E90FF] hover:bg-blue-600 cursor-pointer' 
+                                    : 'bg-gray-400 cursor-not-allowed'
+                                }
+                            `}
+                        >
+                            {isLoading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Verificando...
+                                </span>
+                            ) : (
+                                'Iniciar Sesión'
+                            )}
+                        </button>
+
+                        {/* Loading Panel */}
+                        {isLoading && (
+                            <div className="bg-[#F8F9FA] rounded p-5 text-center animate-fade-in">
+                                <div className="w-[200px] h-1 bg-[#ECF0F1] rounded-full mx-auto overflow-hidden">
+                                    <div className="h-full bg-[#3498DB] animate-pulse rounded-full" style={{ width: '60%' }} />
+                                </div>
+                                <p className="text-[#7F8C8D] text-xs mt-3">Verificando credenciales...</p>
+                            </div>
                         )}
-                    </button>
-                </form>
+                    </form>
+                </div>
 
-                {/* Footer */}
-                <p className="text-center text-white/40 text-sm mt-8">
-                    © 2026 FONICRIS. Todos los derechos reservados.
+                {/* Footer - Error Message */}
+                <div className="h-[70px] border-t-[3px] border-white flex items-center justify-center px-8">
+                    {error && (
+                        <p className="text-[#E74C3C] text-sm text-center animate-fade-in">
+                            {error}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* Branding */}
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-center">
+                <p className="text-gray-500 text-sm font-['Montserrat',sans-serif]">
+                    <span className="font-bold text-[#2C3E50]">FONICRIS</span> - Sistema de Gestión de Inventario
                 </p>
+                <p className="text-gray-400 text-xs mt-1">© 2026 Todos los derechos reservados</p>
             </div>
         </div>
     );

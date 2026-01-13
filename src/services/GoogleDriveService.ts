@@ -160,8 +160,9 @@ class GoogleDriveService {
         // Make the file publicly accessible
         await this.makePublic(data.id);
 
-        // Return a direct image URL
-        return `https://drive.google.com/uc?export=view&id=${data.id}`;
+        // Return a direct image URL using lh3.googleusercontent.com format
+        // This format works better in browsers than the uc?export=view format
+        return `https://lh3.googleusercontent.com/d/${data.id}`;
     }
 
     /**
@@ -187,11 +188,23 @@ class GoogleDriveService {
      * Deletes a file from Google Drive
      */
     async deleteImage(fileUrl: string): Promise<void> {
-        // Extract file ID from URL
-        const match = fileUrl.match(/id=([a-zA-Z0-9_-]+)/);
-        if (!match) return;
+        // Extract file ID from various URL formats
+        let fileId: string | null = null;
+        
+        // Format: https://drive.google.com/uc?export=view&id=FILE_ID
+        const ucMatch = fileUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (ucMatch) fileId = ucMatch[1];
+        
+        // Format: https://lh3.googleusercontent.com/d/FILE_ID
+        const lh3Match = fileUrl.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+        if (lh3Match) fileId = lh3Match[1];
+        
+        // Format: https://drive.google.com/file/d/FILE_ID/view
+        const fileMatch = fileUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (fileMatch) fileId = fileMatch[1];
 
-        const fileId = match[1];
+        if (!fileId) return;
+
         const token = await this.getAccessToken();
 
         await fetch(`${DRIVE_API_FILES}/${fileId}`, {
@@ -206,10 +219,46 @@ class GoogleDriveService {
      * Gets a thumbnail URL for a Drive image
      */
     getThumbnailUrl(fileUrl: string, size: number = 200): string {
-        const match = fileUrl.match(/id=([a-zA-Z0-9_-]+)/);
-        if (!match) return fileUrl;
+        let fileId: string | null = null;
+        
+        // Format: https://drive.google.com/uc?export=view&id=FILE_ID
+        const ucMatch = fileUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (ucMatch) fileId = ucMatch[1];
+        
+        // Format: https://lh3.googleusercontent.com/d/FILE_ID
+        const lh3Match = fileUrl.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+        if (lh3Match) fileId = lh3Match[1];
+        
+        // Format: https://drive.google.com/file/d/FILE_ID/view
+        const fileMatch = fileUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (fileMatch) fileId = fileMatch[1];
 
-        return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w${size}`;
+        if (!fileId) return fileUrl;
+
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`;
+    }
+
+    /**
+     * Converts any Google Drive URL to a direct viewable URL
+     */
+    getDirectUrl(fileUrl: string): string {
+        let fileId: string | null = null;
+        
+        // Format: https://drive.google.com/uc?export=view&id=FILE_ID
+        const ucMatch = fileUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (ucMatch) fileId = ucMatch[1];
+        
+        // Format: https://lh3.googleusercontent.com/d/FILE_ID
+        const lh3Match = fileUrl.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+        if (lh3Match) fileId = lh3Match[1];
+        
+        // Format: https://drive.google.com/file/d/FILE_ID/view
+        const fileMatch = fileUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (fileMatch) fileId = fileMatch[1];
+
+        if (!fileId) return fileUrl;
+
+        return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
 }
 

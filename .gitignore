@@ -29,6 +29,10 @@ dist-ssr
 
 # Environment variables
 .env
+.env.local
 .env.test
 .env.production
 .env.development
+
+# WPF Project (reference only)
+GestionProject/
