@@ -49,6 +49,19 @@ export default function Inventory() {
         loadFilterOptions();
     }, []);
 
+    // Listen for add asset event from header
+    useEffect(() => {
+        const handleOpenAddModal = () => {
+            setEditingAsset(null);
+            setShowAssetModal(true);
+        };
+
+        window.addEventListener('openAddAssetModal', handleOpenAddModal);
+        return () => {
+            window.removeEventListener('openAddAssetModal', handleOpenAddModal);
+        };
+    }, []);
+
     const loadFilterOptions = async () => {
         try {
             const options = await googleSheetsService.getFilterOptions();
@@ -210,11 +223,15 @@ export default function Inventory() {
         );
     };
 
-    const GroupBadge = ({ grupo }: { grupo: string }) => (
-        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-400 text-yellow-900">
-            {grupo}
-        </span>
-    );
+    const GroupBadge = ({ grupo }: { grupo: string }) => {
+        const isNinos = grupo.toLowerCase().includes('niños');
+        const displayName = grupo.replace(/^ORFANATO\s*/i, '');
+        return (
+            <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white ${isNinos ? 'bg-[#1E90FF]' : 'bg-pink-500'}`}>
+                {displayName}
+            </span>
+        );
+    };
 
     const QuantityBadge = ({ cantidad }: { cantidad: number }) => (
         <span className="px-2 py-0.5 rounded text-sm font-semibold bg-blue-500 text-white min-w-[24px] text-center inline-block">
@@ -248,21 +265,21 @@ export default function Inventory() {
     return (
         <div className="h-full flex flex-col overflow-hidden">
             {/* Mobile Filters */}
-            <div className="lg:hidden flex gap-2 mb-4 flex-shrink-0">
+            <div className="lg:hidden grid grid-cols-2 gap-2 mb-4 flex-shrink-0">
                 <select
                     value={filters.grupo?.[0] || ''}
                     onChange={(e) => setFilters({ grupo: e.target.value ? [e.target.value] : [] })}
-                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm"
+                    className="w-full px-3 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm truncate"
                 >
                     <option value="">Seleccionar Grupo</option>
                     {filterOptions.grupos.map((g) => (
-                        <option key={g} value={g}>{g}</option>
+                        <option key={g} value={g}>{g.replace(/^ORFANATO\s*/i, '')}</option>
                     ))}
                 </select>
                 <select
                     value={filters.zona?.[0] || ''}
                     onChange={(e) => setFilters({ zona: e.target.value ? [e.target.value] : [] })}
-                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm"
+                    className="w-full px-3 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 text-sm truncate"
                 >
                     <option value="">Seleccionar Zona</option>
                     {filterOptions.zonas.map((z) => (
@@ -380,18 +397,7 @@ export default function Inventory() {
             </div>
 
             {/* Mobile Cards View */}
-            <div className="lg:hidden flex-1 overflow-y-auto space-y-3">
-                {/* Mobile Add Button */}
-                <button
-                    onClick={handleAddAsset}
-                    className="w-full p-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors"
-                >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                    </svg>
-                    Añadir Activo
-                </button>
-
+            <div className="lg:hidden flex-1 overflow-y-auto space-y-3 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {paginatedActivos.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
                         No se encontraron activos

@@ -141,66 +141,66 @@ export default function Colaboradores() {
             )}
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
                         </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="min-w-0">
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                 {usuarios.filter(u => u.Rol === 'Prime').length}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Prime</p>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">Prime</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />
                         </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="min-w-0">
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                 {usuarios.filter(u => u.Rol === 'Admin').length}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Administradores</p>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">Admin</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="min-w-0">
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                 {usuarios.filter(u => u.Rol === 'Usuario').length}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Editores</p>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">Editores</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                            <Eye className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                            <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
                         </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="min-w-0">
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                                 {usuarios.filter(u => u.Rol === 'Visualizador').length}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Visualizadores</p>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">Viewers</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Users Table */}
-            <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Users Table - Desktop */}
+            <div className="hidden sm:block flex-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-auto h-full">
                     <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
@@ -287,6 +287,48 @@ export default function Colaboradores() {
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            {/* Users List - Mobile */}
+            <div className="sm:hidden flex-1 space-y-3 overflow-y-auto scrollbar-hide">
+                {usuarios.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400">
+                        No hay colaboradores registrados
+                    </div>
+                ) : (
+                    usuarios.map((usuario) => (
+                        <div 
+                            key={usuario.Id}
+                            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+                            onClick={() => isPrime && handleEditUser(usuario)}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                                            {usuario.Nombre?.charAt(0) || 'U'}
+                                        </span>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                                            {usuario.Nombre || 'Sin nombre'}
+                                        </p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                            {usuario.Email}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                                    usuario.Activo 
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                                }`}>
+                                    {usuario.Activo ? 'Activo' : 'Inactivo'}
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* Edit Modal */}

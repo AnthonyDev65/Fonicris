@@ -135,6 +135,21 @@ export default function Layout() {
 
                 {/* Right: User info + Actions */}
                 <div className="flex items-center gap-3">
+                    {/* Add Asset Button - Mobile and Tablet, visible only on inventory page */}
+                    {location.pathname === '/inventario' && (
+                        <button
+                            onClick={() => {
+                                // Dispatch custom event to open add modal
+                                window.dispatchEvent(new CustomEvent('openAddAssetModal'));
+                            }}
+                            className="lg:hidden p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            title="Añadir activo"
+                        >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                            </svg>
+                        </button>
+                    )}
                     {/* User info - Desktop */}
                     <div className="hidden lg:flex items-center gap-3 pr-3 border-r border-gray-200 dark:border-gray-700">
                         <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
@@ -152,10 +167,10 @@ export default function Layout() {
                         </div>
                     </div>
 
-                    {/* Dark mode toggle */}
+                    {/* Dark mode toggle - Hidden on mobile */}
                     <button
                         onClick={() => setDarkMode(!darkMode)}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        className="hidden md:flex p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         title={darkMode ? 'Modo claro' : 'Modo oscuro'}
                     >
                         {darkMode ? (
@@ -169,10 +184,10 @@ export default function Layout() {
                         )}
                     </button>
 
-                    {/* Logout button */}
+                    {/* Logout button - Hidden on mobile */}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        className="hidden md:flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                         title="Salir"
                     >
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -200,7 +215,11 @@ export default function Layout() {
                         className="fixed inset-0 bg-black/50 z-40 md:hidden"
                         onClick={() => setMobileMenuOpen(false)}
                     />
-                    <div className="absolute top-16 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-50 md:hidden">
+                    <div className="fixed inset-x-0 bottom-0 bg-white dark:bg-gray-800 rounded-t-2xl z-50 md:hidden animate-slide-up max-h-[85vh] overflow-y-auto">
+                        {/* Handle bar */}
+                        <div className="flex justify-center pt-3 pb-2">
+                            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                        </div>
                         <nav className="p-4 space-y-2">
                             {/* FONICRIS divider for mobile */}
                             <div className="flex items-center gap-3 px-4 py-2 mb-2">
@@ -246,6 +265,37 @@ export default function Layout() {
                                         </p>
                                     </div>
                                 </div>
+
+                                {/* Dark mode toggle in mobile menu */}
+                                <button
+                                    onClick={() => setDarkMode(!darkMode)}
+                                    className="w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    {darkMode ? (
+                                        <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z" />
+                                        </svg>
+                                    )}
+                                    <span>{darkMode ? 'Modo claro' : 'Modo oscuro'}</span>
+                                </button>
+
+                                {/* Logout button in mobile menu */}
+                                <button
+                                    onClick={() => {
+                                        setMobileMenuOpen(false);
+                                        handleLogout();
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                >
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                                    </svg>
+                                    <span>Cerrar sesión</span>
+                                </button>
                             </div>
                         </nav>
                     </div>

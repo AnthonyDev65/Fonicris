@@ -7,11 +7,14 @@ import {
     X,
     Loader2,
     Upload,
-    Image as ImageIcon,
     QrCode,
     Printer,
     CheckCircle,
     AlertCircle,
+    ScanLine,
+    MessageSquarePlus,
+    Camera,
+    ImagePlus,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -75,7 +78,10 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
     const [error, setError] = useState<string | null>(null);
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'exists' | 'available' | 'error'>('idle');
     const [showQR, setShowQR] = useState(false);
+    const [showObservaciones, setShowObservaciones] = useState(false);
+    const [showImageOptions, setShowImageOptions] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
     const qrRef = useRef<HTMLDivElement>(null);
 
     const isEdit = asset !== null;
@@ -178,9 +184,10 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
 
         try {
             const userName = user?.Nombre || user?.Email || 'Usuario';
+            const formWithResponsable = { ...form, Responsable: userName };
             
             if (isEdit && asset) {
-                await googleSheetsService.updateActivo({ ...form, Numero: asset.Numero });
+                await googleSheetsService.updateActivo({ ...formWithResponsable, Numero: asset.Numero });
                 // Log edit activity
                 await googleSheetsService.addActivityLog(
                     userName,
@@ -188,7 +195,7 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                     `Activo editado: ${form.CodigoId} - ${form.Nombre}`
                 );
             } else {
-                await googleSheetsService.addActivo(form);
+                await googleSheetsService.addActivo(formWithResponsable);
                 // Log create activity
                 await googleSheetsService.addActivityLog(
                     userName,
@@ -259,14 +266,14 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end lg:items-center justify-center z-50 lg:p-4 overflow-y-auto">
             <div 
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl my-8 animate-fade-in"
+                className="bg-white dark:bg-gray-800 rounded-t-2xl lg:rounded-xl shadow-2xl w-full lg:max-w-4xl lg:my-8 max-h-[90vh] overflow-y-auto animate-slide-up lg:animate-fade-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white font-['Montserrat',sans-serif]">
+                <div className="flex items-center justify-between p-4 lg:p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+                    <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white font-['Montserrat',sans-serif]">
                         {isEdit ? 'Editar Activo' : 'Añadir Activo'}
                     </h2>
                     <button
@@ -279,47 +286,45 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
 
                 {/* Code Verification Section */}
                 {!isEdit && (
-                    <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <label className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                Código:
-                            </label>
+                    <div className="px-4 sm:px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-2">
                             <input
                                 type="text"
                                 name="CodigoId"
                                 value={form.CodigoId}
                                 onChange={handleChange}
-                                className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Ingresa el código"
+                                className="flex-1 min-w-0 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                placeholder="Código"
                             />
+                            <button
+                                type="button"
+                                onClick={() => {/* TODO: Implementar escaneo QR */}}
+                                className="p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                title="Escanear QR"
+                            >
+                                <ScanLine className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                            </button>
                             <button
                                 type="button"
                                 onClick={handleVerifyCode}
                                 disabled={isVerifying || !form.CodigoId.trim()}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-sm whitespace-nowrap"
                             >
                                 {isVerifying ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Verificando...
-                                    </>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                    'Verificar Código'
+                                    <>
+                                        <CheckCircle className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Verificar</span>
+                                    </>
                                 )}
                             </button>
-                            
                             {/* Verification Status */}
                             {verificationStatus === 'available' && (
-                                <span className="flex items-center gap-2 text-green-600 dark:text-green-400 font-semibold">
-                                    <CheckCircle className="w-5 h-5" />
-                                    Código disponible
-                                </span>
+                                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                             )}
                             {verificationStatus === 'exists' && (
-                                <span className="flex items-center gap-2 text-red-600 dark:text-red-400 font-semibold">
-                                    <AlertCircle className="w-5 h-5" />
-                                    Código ya existe
-                                </span>
+                                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                             )}
                         </div>
                     </div>
@@ -339,7 +344,7 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                         {/* Left Column - Form Fields */}
                         <div className="lg:col-span-2 space-y-6">
                             {/* Row 1: Nombre y Marca */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Nombre del Activo *
@@ -355,7 +360,7 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                        Marca *
+                                        Marca
                                     </label>
                                     <input
                                         type="text"
@@ -367,8 +372,23 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                                 </div>
                             </div>
 
-                            {/* Row 2: Valor y Cantidad */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Row 2: Estado, Valor y Cantidad - Compacto en móviles */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Estado *
+                                    </label>
+                                    <select
+                                        name="Estado"
+                                        value={form.Estado}
+                                        onChange={handleChange}
+                                        className="w-full px-2 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer text-sm"
+                                    >
+                                        {ESTADOS.map(estado => (
+                                            <option key={estado} value={estado}>{estado}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Valor *
@@ -380,7 +400,7 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                                         onChange={handleChange}
                                         min="0"
                                         step="0.01"
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-2 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                     />
                                 </div>
                                 <div>
@@ -393,29 +413,14 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                                         value={form.Cantidad}
                                         onChange={handleChange}
                                         min="1"
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-2 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                     />
                                 </div>
                             </div>
 
-                            {/* Row 3: Estado y Grupo */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                        Estado *
-                                    </label>
-                                    <select
-                                        name="Estado"
-                                        value={form.Estado}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
-                                    >
-                                        {ESTADOS.map(estado => (
-                                            <option key={estado} value={estado}>{estado}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
+                            {/* Row 3: Grupo y Zona */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="w-full">
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Grupo *
                                     </label>
@@ -423,18 +428,14 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                                         name="Grupo"
                                         value={form.Grupo}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer text-sm"
                                     >
                                         {GRUPOS.map(grupo => (
-                                            <option key={grupo} value={grupo}>{grupo}</option>
+                                            <option key={grupo} value={grupo}>{grupo.replace(/^ORFANATO\s*/i, '')}</option>
                                         ))}
                                     </select>
                                 </div>
-                            </div>
-
-                            {/* Row 4: Zona y Responsable */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
+                                <div className="w-full">
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Zona *
                                     </label>
@@ -442,25 +443,13 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                                         name="Zona"
                                         value={form.Zona}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                                        className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer text-sm"
                                     >
                                         <option value="">Seleccionar zona</option>
                                         {availableZonas.map(zona => (
                                             <option key={zona} value={zona}>{zona}</option>
                                         ))}
                                     </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                        Responsable
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="Responsable"
-                                        value={form.Responsable}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
                                 </div>
                             </div>
 
@@ -480,76 +469,159 @@ export default function AssetModal({ asset, onClose, onSave }: AssetModalProps) 
                                 </div>
                             )}
 
-                            {/* Observaciones */}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                    Observaciones
-                                </label>
-                                <textarea
-                                    name="Observaciones"
-                                    value={form.Observaciones}
-                                    onChange={handleChange}
-                                    rows={3}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                />
-                            </div>
+                            {/* Observaciones - Toggle */}
+                            {!showObservaciones ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowObservaciones(true)}
+                                    className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
+                                >
+                                    <MessageSquarePlus className="w-4 h-4" />
+                                    Agregar observaciones
+                                </button>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Observaciones
+                                    </label>
+                                    <textarea
+                                        name="Observaciones"
+                                        value={form.Observaciones}
+                                        onChange={handleChange}
+                                        rows={3}
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                        placeholder="Escribe tus observaciones aquí..."
+                                    />
+                                </div>
+                            )}
                         </div>
 
-                        {/* Right Column - Image */}
+                        {/* Right Column - Image (Desktop) / Toggle Button (Mobile) */}
                         <div className="space-y-4">
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                                Imagen del Activo
-                            </label>
-                            
-                            {/* Image Preview */}
-                            <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 aspect-square flex items-center justify-center overflow-hidden">
-                                {form.ImagenUrl ? (
-                                    <img
-                                        src={form.ImagenUrl}
-                                        alt="Preview"
-                                        className="w-full h-full object-contain"
-                                    />
+                            {/* Desktop: Siempre visible */}
+                            <div className="hidden lg:block">
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                    Imagen del Activo
+                                </label>
+                                
+                                {/* Image Preview */}
+                                {form.ImagenUrl && (
+                                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 aspect-square flex items-center justify-center overflow-hidden mb-4">
+                                        <img
+                                            src={form.ImagenUrl}
+                                            alt="Preview"
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Image Actions */}
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleClearImage}
+                                        disabled={!form.ImagenUrl}
+                                        className="flex-1 px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                    >
+                                        Limpiar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+                                    >
+                                        {isUploading ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Subiendo...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="w-4 h-4" />
+                                                Seleccionar
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Mobile: Toggle button */}
+                            <div className="lg:hidden">
+                                {!showImageOptions && !form.ImagenUrl ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowImageOptions(true)}
+                                        className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
+                                    >
+                                        <ImagePlus className="w-4 h-4" />
+                                        Agregar imagen
+                                    </button>
                                 ) : (
-                                    <div className="text-center text-gray-400">
-                                        <ImageIcon className="w-16 h-16 mx-auto mb-2" />
-                                        <p className="text-sm">Sin imagen</p>
+                                    <div className="space-y-3">
+                                        {/* Image Preview Mobile */}
+                                        {form.ImagenUrl && (
+                                            <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 aspect-video flex items-center justify-center overflow-hidden">
+                                                <img
+                                                    src={form.ImagenUrl}
+                                                    alt="Preview"
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Mobile Image Actions */}
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => cameraInputRef.current?.click()}
+                                                disabled={isUploading}
+                                                className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center justify-center gap-2 text-sm"
+                                            >
+                                                <Camera className="w-4 h-4" />
+                                                Cámara
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploading}
+                                                className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center justify-center gap-2 text-sm"
+                                            >
+                                                {isUploading ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Upload className="w-4 h-4" />
+                                                        Galería
+                                                    </>
+                                                )}
+                                            </button>
+                                            {form.ImagenUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClearImage}
+                                                    className="px-3 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium text-sm"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Image Actions */}
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={handleClearImage}
-                                    disabled={!form.ImagenUrl}
-                                    className="flex-1 px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                                >
-                                    Limpiar
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isUploading}
-                                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 font-medium flex items-center justify-center gap-2"
-                                >
-                                    {isUploading ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Subiendo...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-4 h-4" />
-                                            Seleccionar
-                                        </>
-                                    )}
-                                </button>
-                            </div>
                             <input
                                 ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                            />
+                            <input
+                                ref={cameraInputRef}
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
                                 onChange={handleImageUpload}
                                 className="hidden"
                             />
